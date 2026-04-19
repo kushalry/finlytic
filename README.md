@@ -8,7 +8,7 @@ A production-grade personal finance tracker built with Flutter, demonstrating Cl
 
 ## Demo
 
-![Demo](docs/demo.mp4)
+![Demo](docs/demo.gif)
 
 | Dashboard | Transactions | Budgets | Lock |
 |---|---|---|---|
