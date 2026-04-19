@@ -42,6 +42,20 @@ class AppDatabase extends _$AppDatabase {
   /// immediately. Users can archive these or add their own.
   Future<void> _seedDefaults() async {
     await batch((b) {
+      b.insertAll(accounts, [
+        AccountsCompanion.insert(
+          name: 'Cash',
+          type: AccountType.cash,
+          colorHex: '#558B2F',
+          iconName: 'payments',
+        ),
+        AccountsCompanion.insert(
+          name: 'Savings',
+          type: AccountType.bank,
+          colorHex: '#1565C0',
+          iconName: 'account_balance',
+        ),
+      ]);
       b.insertAll(categories, [
         CategoriesCompanion.insert(
           name: 'Salary',
