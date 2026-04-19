@@ -24,7 +24,7 @@ class TransactionListScreen extends ConsumerWidget {
       ),
       body: transactionsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => _ErrorView(message: e.toString()),
         data: (transactions) {
           if (transactions.isEmpty) return const _EmptyState();
           final categories = categoriesAsync.valueOrNull ?? const <Category>[];
@@ -37,12 +37,22 @@ class TransactionListScreen extends ConsumerWidget {
                 const Divider(height: 1, indent: 72, endIndent: 16),
             itemBuilder: (context, i) {
               final t = transactions[i];
-              return TransactionTile(
-                transaction: t,
-                category: t.categoryId != null
-                    ? categoryById[t.categoryId!]
-                    : null,
-                onTap: () => context.push('/transactions/edit/${t.id}'),
+              return AnimatedSlide(
+                duration: Duration(milliseconds: 200 + i * 30),
+                curve: Curves.easeOut,
+                offset: Offset.zero,
+                child: AnimatedOpacity(
+                  duration: Duration(milliseconds: 200 + i * 30),
+                  opacity: 1,
+                  child: TransactionTile(
+                    transaction: t,
+                    category: t.categoryId != null
+                        ? categoryById[t.categoryId!]
+                        : null,
+                    onTap: () =>
+                        context.push('/transactions/edit/${t.id}'),
+                  ),
+                ),
               );
             },
           );
@@ -63,15 +73,15 @@ class _EmptyState extends StatelessWidget {
         children: [
           Icon(
             Icons.receipt_long,
-            size: 64,
+            size: 72,
             color: Theme.of(context).colorScheme.outline,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'No transactions yet',
-            style: TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Tap Add to record your first one',
             style: TextStyle(
@@ -79,6 +89,41 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Something went wrong',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
