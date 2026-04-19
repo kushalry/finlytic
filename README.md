@@ -1,133 +1,202 @@
 # Finlytic
 
-A personal finance tracker built with Flutter, showcasing production-grade mobile architecture for a fintech domain.
+A production-grade personal finance tracker built with Flutter, demonstrating Clean Architecture, reactive data flow, and fintech-appropriate engineering decisions.
 
-> **Status:** In active development. Follow along via commit history — each commit is a meaningful architectural step.
+> Portfolio project for SDE-2 mobile/cross-platform roles. Every commit is a deliberate architectural step — the [commit history](../../commits/main) reads like a walkthrough.
 
-## Why this project
+---
 
-Finlytic is part of a three-project portfolio designed to demonstrate senior-level (SDE-2) engineering across mobile and backend. This is the Flutter piece: a realistic fintech app where architecture, data modeling, and performance decisions matter.
+## Demo
 
-The other two projects in the portfolio are a native Android app and a Java Spring Boot backend service, each targeting different domains to flex different skills.
+<!-- TODO: replace with your actual GIF/screenshots after 9.4 -->
+![Demo](docs/demo.gif)
 
-## Features (planned)
+| Dashboard | Transactions | Budgets | Lock |
+|---|---|---|---|
+| ![Dashboard](docs/dashboard.png) | ![Transactions](docs/transactions.png) | ![Budgets](docs/budgets.png) | ![Lock](docs/lock.png) |
 
-- Track income and expenses across multiple accounts (bank, wallet, credit card, cash)
-- Categorize transactions with smart defaults, archive old categories without losing history
-- Monthly budgets per category with visual progress indicators
-- Dashboard with spending breakdown (pie) and monthly trend (line) charts
-- Biometric app lock for sensitive financial data
-- Dark / light / system theme
-- CSV import / export
-- AI-powered insights (stretch goal)
+---
+
+## What this project demonstrates
+
+This isn't a CRUD tutorial. It's a deliberate showcase of patterns real fintech mobile teams use.
+
+- **Clean Architecture** with feature-first organization and a strict dependency rule (domain depends on nothing)
+- **Reactive data flow** end-to-end — Drift streams → Riverpod providers → Flutter widgets, with zero manual refresh logic
+- **Type-safe money handling** via a `Money` value type with integer minor units (no floats, no cross-currency bugs)
+- **Functional error handling** with `Result<T>` and a sealed `Failure` hierarchy, exhaustively matched at the UI layer
+- **Biometric app lock** with lifecycle-aware re-auth on backgrounding, graceful fallback when unavailable
+- **Production testing pyramid** — domain unit tests in pure Dart, data integration tests against in-memory SQLite
+
+---
 
 ## Tech stack
 
-| Layer | Choice | Why |
+| Concern | Choice | Reasoning |
 |---|---|---|
-| Framework | Flutter 3.24+ | Cross-platform single codebase |
-| Language | Dart 3.5+ | Null safety, records, pattern matching |
-| State management | Riverpod 2.x | Compile-safe, testable without `BuildContext`, modern community default |
-| Navigation | go_router | Declarative routing with type-safe deep links |
-| Local database | Drift (SQLite) | Type-safe SQL, reactive streams, migration system |
-| Data classes | Freezed | Immutability, `copyWith`, exhaustive `switch` |
-| Charts | fl_chart | Customizable, performant |
-| Testing | flutter_test, mocktail, integration_test | Full testing pyramid |
+| Framework | Flutter 3.24+ | Cross-platform, single codebase, mature ecosystem |
+| Language | Dart 3.5+ | Null safety, records, sealed classes, pattern matching |
+| State | Riverpod 2.x (code-gen) | Compile-safe, BuildContext-free, autodispose by default |
+| Navigation | go_router | Declarative, type-safe, deep-link ready |
+| Local DB | Drift (SQLite) | Type-safe SQL, reactive streams, migrations |
+| Immutability | Freezed | Generated copyWith/==/hashCode, no mechanical boilerplate |
+| Charts | fl_chart | Interactive, customizable, performant |
+| Biometrics | local_auth | Platform-native Face ID / fingerprint |
+| Reactive combinators | rxdart | combineLatest for multi-stream composition |
+
+---
 
 ## Architecture
 
-Clean Architecture with feature-first folder organization.
+Clean Architecture with a strict dependency rule: **dependencies point inward**.
 
-```
+┌──────────────────────────────────────────────────┐
+│  PRESENTATION                                    │
+│  Flutter widgets, Riverpod providers, routes     │
+│    │                                             │
+│    │ depends on                                  │
+│    ▼                                             │
+│  ┌────────────────────────────────────────────┐  │
+│  │  DOMAIN                                    │  │
+│  │  Pure Dart. Business rules. No Flutter.    │  │
+│  │  Entities, use cases, repository interfaces│  │
+│  │    ▲                                       │  │
+│  │    │ implements                            │  │
+│  └────┼───────────────────────────────────────┘  │
+│       │                                          │
+│  ┌────┼───────────────────────────────────────┐  │
+│  │  DATA                                      │  │
+│  │  Drift-backed repository implementations,  │  │
+│  │  mappers translating DB rows ↔ domain      │  │
+│  └────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────┘
+
+**Folder layout:**
 lib/
-├── app/                          # MaterialApp, router, theme
-├── core/
-│   ├── database/                 # Drift schema, DAOs, migrations
-│   ├── errors/                   # Failure types
-│   └── utils/                    # Formatters, extensions
+├── app/                    MaterialApp, router,theme
+├── core/                   Cross-feature infrastructure
+│   ├── database/           Drift schema + DAOs
+│   ├── errors/             Failure sealed class
+│   ├── types/              Money, Result
+│   └── utils/              Formatters
 ├── features/
-│   ├── transactions/
-│   │   ├── data/                 # Drift-backed repositories
-│   │   ├── domain/               # Pure Dart business logic (testable in isolation)
-│   │   └── presentation/         # Riverpod providers, screens, widgets
+│   ├── transactions/       (one feature = one folder)
+│   │   ├── data/           Drift-specific: impls, mappers, providers
+│   │   ├── domain/         Pure Dart: entities, repo interfaces, use cases
+│   │   └── presentation/   Flutter: screens, widgets, providers
 │   ├── categories/
+│   ├── accounts/
 │   ├── budgets/
 │   ├── dashboard/
-│   └── settings/
-└── shared/                       # Reusable widgets
-```
+│   ├── settings/
+│   └── security/
+└── shared/                 Widgets reused across features
 
-**Dependency rule:** presentation depends on domain, data implements domain. Domain has zero Flutter dependencies — it's pure Dart, fast to test, framework-agnostic.
+Each feature is self-contained — you could literally extract `features/transactions/` into its own package.
+
+---
 
 ## Key design decisions
 
-Architectural decisions that interviewers typically probe. Documented upfront.
-
 ### Money stored as integer minor units
-All amounts live in the database as integers in the minor unit of the currency (paise/cents). `₹1,234.56` is stored as `123456`. Floating-point math is never used for money — this eliminates a common class of rounding errors that plague fintech systems.
+`₹1,234.56` is stored as `123456` (paise). `double` is never used for money — IEEE 754 precision loss costs real money at fintech scale. A `Money` value type enforces same-currency arithmetic (cross-currency `+` throws).
 
-### Single `transactions` table with `type` column
-Income, expense, and transfer are all rows in one table, distinguished by a `type` enum. Keeps queries simple (one balance query across all movement types) and supports linking transfer pairs via a shared `transferGroupId`.
+### Typed errors via `Result<T>` and sealed `Failure`
+Use cases never throw — they return `Result<T>` that's either `Success(data)` or `Err(failure)`. The sealed `Failure` hierarchy (validation / notFound / database / unknown) is pattern-matched exhaustively at the UI layer. Compile-time safety against ignored errors.
 
-### Soft delete via `isArchived` flag
-Categories and accounts can't be hard-deleted because historical transactions reference them. Archiving hides them from pickers while preserving referential integrity.
+### Reactive streams over manual refresh
+Drift's `watch()` queries return streams that re-emit when underlying data changes. Riverpod wraps them. Every screen subscribes. Adding a transaction automatically updates the list, dashboard summaries, pie chart, and budget progress bars — with zero explicit refresh code.
 
-### Reactive queries via Drift streams
-UI subscribes to query streams, so any database write automatically updates the screen — no manual refresh logic, no `setState` after save.
+### One use case per file
+`AddTransactionUseCase`, `UpdateTransactionUseCase`, `DeleteTransactionUseCase`... single responsibility at the class level. Easier DI, easier tests, easier deletion than a service class with 20 methods.
 
-### Background database initialization
-`NativeDatabase.createInBackground` opens the SQLite connection on a background isolate, keeping the main isolate free for UI rendering.
+### Soft delete for referential integrity
+Categories and accounts can't be hard-deleted — historical transactions reference them. Archiving hides them from pickers while preserving history.
+
+### Biometric lock locks on background, not on timeout
+Timeouts are annoying on an app you glance at often. Lock-on-background means "data disappears the moment the app isn't active." Strong security, low friction.
+
+---
 
 ## Running the project
 
-**Prerequisites:**
-- Flutter 3.24+ (`flutter --version`)
+**Prerequisites**
+- Flutter 3.24+
 - Java 17 (for Android builds)
-- Xcode 15+ (for iOS builds on macOS)
+- Xcode 15+ (for iOS builds)
 
-**Setup:**
 ```bash
-git clone https://github.com/<you>/finlytic.git
+git clone https://github.com/<your-username>/finlytic.git
 cd finlytic
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
+The first run seeds default accounts and categories. Add a few transactions, set a budget, toggle app lock in Settings, and try backgrounding the app.
+
+---
+
 ## Testing
 
 ```bash
-# Run all tests
-flutter test
-
-# Run with coverage
-flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
+flutter test                    # all tests
+flutter test --coverage         # with coverage
 ```
 
-Testing strategy:
-- **Unit tests** — pure Dart domain logic (use cases, entities)
-- **Integration tests** — DAOs tested against in-memory SQLite
-- **Widget tests** — UI behavior with mocked repositories
-- **End-to-end** — real database, real navigation (planned)
+Testing strategy (pyramid):
+
+- **Domain unit tests** (`test/features/*/domain/`) — pure Dart, no Flutter, no DB. Milliseconds to run. Covers validation rules, money arithmetic, entity invariants.
+- **Data integration tests** (`test/features/*/data/`) — exercises repository implementations against in-memory SQLite. Proves DB mapping and reactive streams work.
+- **Widget tests** (planned) — UI behavior with mocked providers.
+
+---
 
 ## Roadmap
 
 - [x] Project scaffold with Clean Architecture
-- [x] Drift database schema and DAOs
-- [ ] Transactions feature (domain + data + presentation)
-- [ ] Categories feature
-- [ ] Dashboard with charts
-- [ ] Budgets with alerts
-- [ ] Polish: animations, empty states, error handling
-- [ ] Biometric lock
-- [ ] CSV import/export
-- [ ] AI insights
+- [x] Drift schema with migrations and seed data
+- [x] Transactions feature (CRUD + streams)
+- [x] Dashboard with summary cards and interactive pie chart
+- [x] Budgets with animated progress bars
+- [x] Categories management
+- [x] Theme mode (light/dark/system)
+- [x] Biometric app lock
+- [ ] CSV export/import
+- [ ] Multi-account balance tracking with transfers
+- [ ] Monthly trend line chart
+- [ ] Recurring transactions
+- [ ] AI-powered spending insights (LLM integration)
+
+---
+
+## Engineering notes I'd expect interviewers to ask about
+
+**Q: Why Riverpod over BLoC?**
+Compile-time safety, no BuildContext requirement, less boilerplate, autodispose by default. BLoC is still big in older enterprise codebases — the patterns transfer easily — but for a new project Riverpod is the modern default.
+
+**Q: How is the UI reactive?**
+Drift `watch()` queries are streams. Riverpod wraps them in `StreamProvider`. Dashboard summaries are derived providers that read those streams. Inserting a transaction invalidates every watcher of the transactions table; new values flow through derived providers automatically; consuming widgets rebuild. No manual refresh.
+
+**Q: How would you add backend sync?**
+Add a second `TransactionRepository` implementation (remote API) and a sync coordinator. Local Drift stays the source of truth for UI; remote is eventually consistent. Domain layer unchanged because it depends on the repository interface, not the implementation.
+
+**Q: How would you handle schema migrations?**
+Drift's built-in migration system. Bump `schemaVersion`, add `onUpgrade` handler with `ALTER TABLE` calls. For complex migrations, write integration tests that upgrade v1→v2 with realistic data.
+
+**Q: What's the weakest part?**
+- Budget progress calculation lives in the data-layer provider rather than as a domain use case — should be extracted for testability.
+- No offline/online sync yet.
+- No encryption at rest for the SQLite file — acceptable for a portfolio demo, not for production. Would add SQLCipher for real.
+
+---
 
 ## License
 
-MIT — feel free to reference for your own learning.
+MIT
 
 ## Author
 
-Kushal Roy — transitioning to SDE-2. [LinkedIn] [GitHub]
+**<TODO:  Kushal Roy>** — transitioning to SDE-2, building the full-stack portfolio.
+
+[LinkedIn](https://www.linkedin.com/in/kushal-roy-39414b193/) · [GitHub](https://github.com/kushalry)
