@@ -36,6 +36,10 @@ dependencies:
   google_fonts: ^6.2.1
   rxdart: ^0.28.0
 
+  local_auth: ^2.3.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
