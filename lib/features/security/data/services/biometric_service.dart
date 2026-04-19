@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 
 class BiometricService {
@@ -6,32 +7,44 @@ class BiometricService {
   BiometricService([LocalAuthentication? auth])
       : _auth = auth ?? LocalAuthentication();
 
-  /// True if the device has biometric hardware that's enrolled.
   Future<bool> isAvailable() async {
     try {
       final supported = await _auth.isDeviceSupported();
-      if (!supported) return false;
       final canCheck = await _auth.canCheckBiometrics;
-      if (!canCheck) return false;
       final available = await _auth.getAvailableBiometrics();
-      return available.isNotEmpty;
-    } catch (_) {
+
+      if (kDebugMode) {
+        debugPrint('[Biometric] isDeviceSupported: $supported');
+        debugPrint('[Biometric] canCheckBiometrics: $canCheck');
+        debugPrint('[Biometric] availableBiometrics: $available');
+      }
+
+      // Relaxed check: device-supported + at least one enrolled biometric.
+      // Some Android skins (Funtouch/MIUI) report canCheckBiometrics=false
+      // even when fingerprints work — so we don't gate on that.
+      return supported && available.isNotEmpty;
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint('[Biometric] isAvailable threw: $e\n$s');
+      }
       return false;
     }
   }
 
-  /// Prompts the user. Returns true on success, false on cancel/failure.
   Future<bool> authenticate({String reason = 'Unlock Finlytic'}) async {
     try {
       return await _auth.authenticate(
         localizedReason: reason,
         options: const AuthenticationOptions(
-          stickyAuth: true,          // survives app backgrounding mid-auth
-          biometricOnly: true,        // don't fall back to device PIN
-          useErrorDialogs: true,      // show OS-native errors
+          stickyAuth: true,
+          biometricOnly: true,
+          useErrorDialogs: true,
         ),
       );
-    } catch (_) {
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint('[Biometric] authenticate threw: $e\n$s');
+      }
       return false;
     }
   }
