@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-
-import '../features/dashboard/presentation/screens/budgets_screen.dart';
+import '../features/budgets/presentation/screens/budgets_screen.dart';
+import '../features/categories/presentation/screens/categories_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../features/dashboard/presentation/screens/settings_screen.dart';
-import '../features/dashboard/presentation/screens/transaction_list_screen.dart';
+import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/transactions/presentation/screens/add_transaction_screen.dart';
+import '../features/transactions/presentation/screens/transaction_list_screen.dart';
 
-
-/// Top-level router. Uses a StatefulShellRoute for bottom-nav persistence —
-/// each tab keeps its own navigation stack.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/dashboard',
   routes: [
+    GoRoute(
+      path: '/transactions/new',
+      builder: (_, __) => const AddTransactionScreen(),
+    ),
+    GoRoute(
+      path: '/settings/categories',
+      builder: (_, __) => const CategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/transactions/edit/:id',
+      builder: (_, state) => AddTransactionScreen(
+        // editing not implemented yet; placeholder route
+        key: ValueKey(state.pathParameters['id']),
+      ),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           _ScaffoldWithNavBar(navigationShell: navigationShell),

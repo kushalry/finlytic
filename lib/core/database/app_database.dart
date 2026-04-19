@@ -16,8 +16,10 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Accounts, Categories, Transactions, Budgets],
-daos: [AccountDao, CategoryDao, TransactionDao, BudgetDao],)
+@DriftDatabase(
+  tables: [Accounts, Categories, Transactions, Budgets],
+  daos: [AccountDao, CategoryDao, TransactionDao, BudgetDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -42,6 +44,20 @@ class AppDatabase extends _$AppDatabase {
   /// immediately. Users can archive these or add their own.
   Future<void> _seedDefaults() async {
     await batch((b) {
+      b.insertAll(accounts, [
+        AccountsCompanion.insert(
+          name: 'Cash',
+          type: AccountType.cash,
+          colorHex: '#558B2F',
+          iconName: 'payments',
+        ),
+        AccountsCompanion.insert(
+          name: 'Savings',
+          type: AccountType.bank,
+          colorHex: '#1565C0',
+          iconName: 'account_balance',
+        ),
+      ]);
       b.insertAll(categories, [
         CategoriesCompanion.insert(
           name: 'Salary',
