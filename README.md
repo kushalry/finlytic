@@ -8,8 +8,7 @@ A production-grade personal finance tracker built with Flutter, demonstrating Cl
 
 ## Demo
 
-<!-- TODO: replace with your actual GIF/screenshots after 9.4 -->
-![Demo](docs/demo.gif)
+![Demo](docs/demo.mp4)
 
 | Dashboard | Transactions | Budgets | Lock |
 |---|---|---|---|
@@ -50,6 +49,7 @@ This isn't a CRUD tutorial. It's a deliberate showcase of patterns real fintech 
 
 Clean Architecture with a strict dependency rule: **dependencies point inward**.
 
+```
 ┌──────────────────────────────────────────────────┐
 │  PRESENTATION                                    │
 │  Flutter widgets, Riverpod providers, routes     │
@@ -70,10 +70,13 @@ Clean Architecture with a strict dependency rule: **dependencies point inward**.
 │  │  mappers translating DB rows ↔ domain      │  │
 │  └────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────┘
+```
 
 **Folder layout:**
+
+```
 lib/
-├── app/                    MaterialApp, router,theme
+├── app/                    MaterialApp, router, theme
 ├── core/                   Cross-feature infrastructure
 │   ├── database/           Drift schema + DAOs
 │   ├── errors/             Failure sealed class
@@ -91,6 +94,7 @@ lib/
 │   ├── settings/
 │   └── security/
 └── shared/                 Widgets reused across features
+```
 
 Each feature is self-contained — you could literally extract `features/transactions/` into its own package.
 
@@ -126,7 +130,7 @@ Timeouts are annoying on an app you glance at often. Lock-on-background means "d
 - Xcode 15+ (for iOS builds)
 
 ```bash
-git clone https://github.com/<your-username>/finlytic.git
+git clone https://github.com/kushalry/finlytic.git
 cd finlytic
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
@@ -195,8 +199,10 @@ Drift's built-in migration system. Bump `schemaVersion`, add `onUpgrade` handler
 
 MIT
 
+---
+
 ## Author
 
-**<TODO:  Kushal Roy>** — transitioning to SDE-2, building the full-stack portfolio.
+**Kushal Roy** — transitioning to SDE-2, building a full-stack portfolio across Flutter, native Android, and Spring Boot.
 
 [LinkedIn](https://www.linkedin.com/in/kushal-roy-39414b193/) · [GitHub](https://github.com/kushalry)
