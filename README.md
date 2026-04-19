@@ -12,7 +12,7 @@ A production-grade personal finance tracker built with Flutter, demonstrating Cl
 
 | Dashboard | Transactions | Budgets | Lock |
 |---|---|---|---|
-| ![Dashboard](docs/dashboard.png) | ![Transactions](docs/transactions.png) | ![Budgets](docs/budgets.png) | ![Lock](docs/lock.png) |
+| ![Dashboard](docs/dashboard.png) | ![Transactions](docs/transactions.png) | ![Budgets](docs/budget.png) | ![Lock](docs/lock.png) |
 
 ---
 
