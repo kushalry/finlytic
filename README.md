@@ -174,26 +174,6 @@ Testing strategy (pyramid):
 
 ---
 
-## Engineering notes I'd expect interviewers to ask about
-
-**Q: Why Riverpod over BLoC?**
-Compile-time safety, no BuildContext requirement, less boilerplate, autodispose by default. BLoC is still big in older enterprise codebases — the patterns transfer easily — but for a new project Riverpod is the modern default.
-
-**Q: How is the UI reactive?**
-Drift `watch()` queries are streams. Riverpod wraps them in `StreamProvider`. Dashboard summaries are derived providers that read those streams. Inserting a transaction invalidates every watcher of the transactions table; new values flow through derived providers automatically; consuming widgets rebuild. No manual refresh.
-
-**Q: How would you add backend sync?**
-Add a second `TransactionRepository` implementation (remote API) and a sync coordinator. Local Drift stays the source of truth for UI; remote is eventually consistent. Domain layer unchanged because it depends on the repository interface, not the implementation.
-
-**Q: How would you handle schema migrations?**
-Drift's built-in migration system. Bump `schemaVersion`, add `onUpgrade` handler with `ALTER TABLE` calls. For complex migrations, write integration tests that upgrade v1→v2 with realistic data.
-
-**Q: What's the weakest part?**
-- Budget progress calculation lives in the data-layer provider rather than as a domain use case — should be extracted for testability.
-- No offline/online sync yet.
-- No encryption at rest for the SQLite file — acceptable for a portfolio demo, not for production. Would add SQLCipher for real.
-
----
 
 ## License
 
